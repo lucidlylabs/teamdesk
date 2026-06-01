@@ -167,11 +167,11 @@ function CheckInModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-6"
+      className="fixed inset-0 z-50 bg-black/20 backdrop-blur-md flex items-center justify-center px-6"
       onClick={onClose}
     >
       <div
-        className="card w-full max-w-lg bg-ink border-paper/15 animate-fadeUp"
+        className="card w-full max-w-lg bg-white border-paper/15 shadow-2xl animate-fadeUp"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
