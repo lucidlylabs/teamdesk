@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#0a0a0f",
-        paper: "#f4f1ea",
+        ink: "#f4f1ea",
+        paper: "#0a0a0f",
         accent: "#ff3b30",
         moss: "#3a5a40",
         mist: "#a3b18a",
