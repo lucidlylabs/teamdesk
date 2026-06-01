@@ -11,10 +11,10 @@ export function Nav({ name, role }: { name: string; role: string }) {
           <span className="font-semibold tracking-wide">Lucidly · TeamDesk</span>
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <div className="text-paper/70">
+          <Link href="/account" className="text-paper/70 hover:text-paper">
             <span className="text-paper">{name}</span>{" "}
             <span className="text-paper/40">· {role}</span>
-          </div>
+          </Link>
           <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-ghost text-xs">
             Sign out
           </button>
