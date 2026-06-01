@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+export const maxDuration = 30;
+
 const Body = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(80),

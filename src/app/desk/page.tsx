@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/Nav";
 import { DeskTabs } from "./Tabs";
 
+export const maxDuration = 30;
+
 export default async function DeskPage() {
   const session = await auth();
   if (!session?.user) redirect("/signin?from=/desk");

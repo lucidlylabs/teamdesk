@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { todayUTC, toUTCDay, ymd } from "@/lib/dates";
 
+export const maxDuration = 30;
+
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   currentTask: z.string().min(1).max(280),

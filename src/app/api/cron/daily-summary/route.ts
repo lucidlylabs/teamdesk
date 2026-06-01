@@ -4,6 +4,8 @@ import { todayUTC } from "@/lib/dates";
 import { buildDailySummary } from "@/lib/summarize";
 import { sendDailySummary } from "@/lib/discord";
 
+export const maxDuration = 60;
+
 /**
  * Runs end of day:
  *  1. For every whitelisted team member without a PRESENT record today, insert ABSENT.

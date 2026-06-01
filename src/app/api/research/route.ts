@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendResearchRelay } from "@/lib/discord";
 
+export const maxDuration = 30;
+
 const Body = z.object({
   title: z.string().min(1).max(200),
   url: z.string().url(),
