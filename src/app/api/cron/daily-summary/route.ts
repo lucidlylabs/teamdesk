@@ -63,3 +63,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, summary: saved, discord });
 }
+
+export const GET = POST;
