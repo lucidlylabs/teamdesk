@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
-    "cron:daily": "tsx scripts/run-daily-summary.ts"
+    "db:seed": "tsx --env-file=.env prisma/seed.ts",
+    "cron:daily": "tsx --env-file=.env scripts/run-daily-summary.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.0",

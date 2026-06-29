@@ -72,6 +72,13 @@ async function main() {
     if (!existing) await prisma.research.create({ data: r });
   }
 
+  // THE 3 — focus settings singleton (North Star + week goal start empty)
+  await prisma.focusSettings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
+
   console.log("seed: done");
 }
 

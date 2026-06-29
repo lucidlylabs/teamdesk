@@ -27,6 +27,12 @@ enum PipelineStatus {
   SHIPPED
 }
 
+enum FocusStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE_PERFECT
+}
+
 model Whitelist {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -86,4 +92,37 @@ model DailySummary {
   summary   String
   refs      String?
   createdAt DateTime @default(now())
+}
+
+// THE 3 — shared daily company focus. One DailyFocus per day, max 3 FocusItems.
+model FocusSettings {
+  id        String   @id // app always uses the literal "singleton"
+  northStar String?
+  weekGoal  String?
+  updatedAt DateTime @updatedAt
+}
+
+model DailyFocus {
+  id        String      @id @default(cuid())
+  date      DateTime    @db.Date @unique
+  recap     String?
+  items     FocusItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  @@index([date])
+}
+
+model FocusItem {
+  id          String      @id @default(cuid())
+  focus       DailyFocus  @relation(fields: [focusId], references: [id], onDelete: Cascade)
+  focusId     String
+  rank        Int
+  title       String
+  owner       String?
+  revenueWhy  String
+  perfectWhen String
+  status      FocusStatus @default(NOT_STARTED)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  @@unique([focusId, rank])
 }

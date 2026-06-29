@@ -11,21 +11,26 @@ type Research = {
   id: string; title: string; url: string; notes: string | null;
   postedBy: string | null; createdAt: string;
 };
-
-const TABS = ["From the Desk", "Product Pipelines", "Research"] as const;
-type Tab = (typeof TABS)[number];
+type FocusItem = {
+  id: string; rank: number; title: string; owner: string | null;
+  revenueWhy: string; perfectWhen: string;
+  status: "NOT_STARTED" | "IN_PROGRESS" | "DONE_PERFECT";
+};
+type FocusLogDay = { date: string; recap: string | null; items: FocusItem[] };
 
 export function DeskTabs({
-  summary, pipelines, research,
+  summary, pipelines, research, focusLog,
 }: {
   summary: Summary; pipelines: Pipeline[]; research: Research[];
+  focusLog: FocusLogDay[] | null;
 }) {
-  const [tab, setTab] = useState<Tab>("From the Desk");
+  const tabs = ["From the Desk", "Product Pipelines", "Research", ...(focusLog ? ["Focus Log"] : [])];
+  const [tab, setTab] = useState<string>("From the Desk");
 
   return (
     <div>
       <div className="flex items-center gap-1 border-b border-paper/10 mb-8 overflow-x-auto">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -42,7 +47,55 @@ export function DeskTabs({
       {tab === "From the Desk" && <FromTheDesk summary={summary} />}
       {tab === "Product Pipelines" && <Pipelines items={pipelines} />}
       {tab === "Research" && <ResearchFeed items={research} />}
+      {tab === "Focus Log" && focusLog && <FocusLog days={focusLog} />}
     </div>
+  );
+}
+
+const STATUS_LABEL: Record<FocusItem["status"], { label: string; cls: string }> = {
+  NOT_STARTED: { label: "Not started", cls: "bg-paper/10 text-paper/60" },
+  IN_PROGRESS: { label: "In progress", cls: "bg-mist/30 text-moss" },
+  DONE_PERFECT: { label: "Done", cls: "bg-moss/20 text-moss" },
+};
+
+function FocusLog({ days }: { days: FocusLogDay[] }) {
+  return (
+    <section className="space-y-4 animate-fadeUp">
+      {days.length === 0 && <div className="card text-paper/60">No focus history yet.</div>}
+      {days.map((d) => {
+        const done = d.items.filter((i) => i.status === "DONE_PERFECT").length;
+        return (
+          <div key={d.date} className="card">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">{d.date}</h3>
+              <span className="text-xs text-paper/50">
+                {done}/{d.items.length} done-to-perfection
+              </span>
+            </div>
+            {d.items.length === 0 ? (
+              <p className="text-sm text-paper/50 mt-2">No focus set this day.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {d.items.map((i) => (
+                  <li key={i.id} className="flex items-start gap-2 text-sm">
+                    <span className="text-accent font-semibold">{i.rank}</span>
+                    <span className="flex-1">{i.title}</span>
+                    <span className={clsx("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0", STATUS_LABEL[i.status].cls)}>
+                      {STATUS_LABEL[i.status].label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {d.recap && (
+              <div className="mt-3 text-sm text-paper/70 border-t border-paper/10 pt-3">
+                <span className="text-paper/50">Recap:</span> {d.recap}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
