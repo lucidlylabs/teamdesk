@@ -19,3 +19,7 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, 
   .label { @apply text-xs uppercase tracking-wider text-paper/60 mb-1 block; }
   .card { @apply rounded-2xl bg-paper/5 border border-paper/10 p-5; }
 }
+
+/* Hide horizontal scrollbar on tab rows while keeping them scrollable on narrow screens */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

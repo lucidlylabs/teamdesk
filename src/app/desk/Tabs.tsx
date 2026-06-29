@@ -29,7 +29,7 @@ export function DeskTabs({
 
   return (
     <div>
-      <div className="flex items-center gap-1 border-b border-paper/10 mb-8 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-paper/10 mb-8 overflow-x-auto no-scrollbar">
         {tabs.map((t) => (
           <button
             key={t}
