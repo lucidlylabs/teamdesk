@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/guards";
 import { prisma } from "@/lib/prisma";
 import { todayUTC } from "@/lib/dates";
@@ -38,21 +39,28 @@ export async function POST() {
     create: { date },
   });
 
-  await prisma.$transaction(
-    unfinished.map((i, idx) =>
-      prisma.focusItem.create({
-        data: {
-          focusId: focus.id,
-          rank: idx + 1,
-          title: i.title,
-          owner: i.owner,
-          revenueWhy: i.revenueWhy,
-          perfectWhen: i.perfectWhen,
-          // status defaults to NOT_STARTED
-        },
-      })
-    )
-  );
+  try {
+    await prisma.$transaction(
+      unfinished.map((i, idx) =>
+        prisma.focusItem.create({
+          data: {
+            focusId: focus.id,
+            rank: idx + 1,
+            title: i.title,
+            owner: i.owner,
+            revenueWhy: i.revenueWhy,
+            perfectWhen: i.perfectWhen,
+            // status defaults to NOT_STARTED
+          },
+        })
+      )
+    );
+  } catch (e) {
+    // Concurrent carry-over for the same day collides on @@unique(focusId, rank).
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")
+      return NextResponse.json({ error: "Today already has focus items" }, { status: 409 });
+    throw e;
+  }
 
   const fresh = await prisma.dailyFocus.findUnique({
     where: { date },
