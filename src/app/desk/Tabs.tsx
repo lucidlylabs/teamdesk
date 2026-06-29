@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import clsx from "clsx";
+import { runSkillClient } from "@/lib/ai/client";
 
 type Summary = { date: string; text: string; refs: string[] } | null;
 type Pipeline = {
@@ -19,12 +20,19 @@ type FocusItem = {
 type FocusLogDay = { date: string; recap: string | null; items: FocusItem[] };
 
 export function DeskTabs({
-  summary, pipelines, research, focusLog,
+  summary, pipelines, research, focusLog, isAdmin = false,
 }: {
   summary: Summary; pipelines: Pipeline[]; research: Research[];
   focusLog: FocusLogDay[] | null;
+  isAdmin?: boolean;
 }) {
-  const tabs = ["From the Desk", "Product Pipelines", "Research", ...(focusLog ? ["Focus Log"] : [])];
+  const tabs = [
+    "From the Desk",
+    "Product Pipelines",
+    "Research",
+    ...(focusLog ? ["Focus Log"] : []),
+    ...(isAdmin ? ["Office Hours"] : []),
+  ];
   const [tab, setTab] = useState<string>("From the Desk");
 
   return (
@@ -47,7 +55,8 @@ export function DeskTabs({
       {tab === "From the Desk" && <FromTheDesk summary={summary} />}
       {tab === "Product Pipelines" && <Pipelines items={pipelines} />}
       {tab === "Research" && <ResearchFeed items={research} />}
-      {tab === "Focus Log" && focusLog && <FocusLog days={focusLog} />}
+      {tab === "Focus Log" && focusLog && <FocusLog days={focusLog} isAdmin={isAdmin} />}
+      {tab === "Office Hours" && isAdmin && <OfficeHours />}
     </div>
   );
 }
@@ -58,9 +67,10 @@ const STATUS_LABEL: Record<FocusItem["status"], { label: string; cls: string }> 
   DONE_PERFECT: { label: "Done", cls: "bg-moss/20 text-moss" },
 };
 
-function FocusLog({ days }: { days: FocusLogDay[] }) {
+function FocusLog({ days, isAdmin }: { days: FocusLogDay[]; isAdmin: boolean }) {
   return (
     <section className="space-y-4 animate-fadeUp">
+      {isAdmin && <WeeklyReview />}
       {days.length === 0 && <div className="card text-paper/60">No focus history yet.</div>}
       {days.map((d) => {
         const done = d.items.filter((i) => i.status === "DONE_PERFECT").length;
@@ -204,5 +214,129 @@ function ResearchFeed({ items }: { items: Research[] }) {
         </a>
       ))}
     </section>
+  );
+}
+
+type OfficeHoursData = {
+  problem: string;
+  options: { label: string; tradeoff: string }[];
+  recommendation: string;
+};
+
+function OfficeHours() {
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [data, setData] = useState<OfficeHoursData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function ask() {
+    setBusy(true);
+    setErr(null);
+    const res = await runSkillClient<OfficeHoursData>("office-hours", { question: q });
+    setBusy(false);
+    if ("error" in res) return setErr(res.error);
+    setOffline(res.source === "fallback");
+    setData(res.data);
+  }
+
+  return (
+    <section className="space-y-4 animate-fadeUp max-w-2xl">
+      <div className="card space-y-3">
+        <h2 className="text-lg font-semibold">Office Hours</h2>
+        <p className="text-sm text-paper/60">
+          Ask a founder question. The advisor sees today&apos;s THE 3, this week&apos;s goal, and the team&apos;s blockers.
+        </p>
+        <textarea
+          className="input"
+          rows={3}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="e.g. We have two deals stalled on pricing — push discount or hold?"
+        />
+        <button className="btn-primary" disabled={busy || !q.trim()} onClick={ask}>
+          {busy ? "Thinking…" : "Ask"}
+        </button>
+        {err && <p className="text-accent text-sm">{err}</p>}
+      </div>
+
+      {data && (
+        <div className="card space-y-3 text-sm">
+          <div className="text-xs uppercase tracking-wider text-paper/50">
+            {offline ? "Office Hours — AI offline" : "Office Hours"}
+          </div>
+          <div>
+            <div className="text-paper/50">The real problem</div>
+            <p className="text-paper/80 whitespace-pre-wrap">{data.problem}</p>
+          </div>
+          {data.options.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-paper/50">Options</div>
+              {data.options.map((o, i) => (
+                <div key={i} className="border border-paper/10 rounded-lg p-2">
+                  <div className="font-medium">{o.label}</div>
+                  <div className="text-paper/70">{o.tradeoff}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-paper/80 whitespace-pre-wrap">
+            <span className="text-paper/50">Recommendation: </span>{data.recommendation}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+type WeeklyReviewData = { wins: string[]; risks: string[]; nextFocus: string[] };
+
+function WeeklyReview() {
+  const [busy, setBusy] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [data, setData] = useState<WeeklyReviewData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setErr(null);
+    const res = await runSkillClient<WeeklyReviewData>("weekly-review", {});
+    setBusy(false);
+    if ("error" in res) return setErr(res.error);
+    setOffline(res.source === "fallback");
+    setData(res.data);
+  }
+
+  const Col = ({ title, items }: { title: string; items: string[] }) => (
+    <div>
+      <div className="text-paper/50 mb-1">{title}</div>
+      {items.length ? (
+        <ul className="list-disc list-inside text-paper/80 space-y-1">
+          {items.map((x, i) => <li key={i}>{x}</li>)}
+        </ul>
+      ) : (
+        <p className="text-paper/40">—</p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="card space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Weekly review</h2>
+        <button className="btn-ghost" disabled={busy} onClick={run}>
+          {busy ? "Generating…" : "Generate"}
+        </button>
+      </div>
+      {err && <p className="text-accent text-sm">{err}</p>}
+      {data && (
+        <div className="text-sm space-y-3">
+          {offline && <div className="text-xs uppercase tracking-wider text-paper/50">AI offline — heuristic</div>}
+          <Col title="Wins" items={data.wins} />
+          <Col title="Risks" items={data.risks} />
+          <Col title="Next week's focus" items={data.nextFocus} />
+        </div>
+      )}
+    </div>
   );
 }

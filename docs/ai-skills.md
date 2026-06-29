@@ -48,12 +48,21 @@ POST /api/ai/run  { skill, input }
 No new route, no new plumbing.
 
 ## Skills
-- **`sharpen-focus-item`** (ADMIN) — critiques a THE 3 focus item (is it revenue-moving?
-  is the perfection bar measurable?) and proposes a tightened rewrite. Surfaced as
-  "Sharpen with AI" on the add-item form in `TheThree.tsx`; the admin reviews and Applies
-  the suggestion into the form, then clicks Add. Fallback: heuristic critique, no rewrite.
+- **`sharpen-focus-item`** (ADMIN) — critiques a THE 3 focus item and proposes a tightened
+  rewrite. "Sharpen with AI" on the add-item form (`TheThree.tsx`); admin Applies into the
+  form then clicks Add. Fallback: heuristic critique, no rewrite.
+- **`office-hours`** (ADMIN) — YC-style advisor Q&A. `prepare()` attaches today's THE 3,
+  week goal, and team blockers; returns problem → options → recommendation. New
+  **Office Hours** tab (`Tabs.tsx`). Fallback: echoes context, no advice.
+- **`ceo-review-the-3`** (ADMIN) — pressure-tests today's items vs North Star + week goal;
+  returns per-item keep/sharpen/cut + what's missing. "Review today's 3 (CEO)" button on
+  the banner. Fallback: heuristic per-item call + done count.
+- **`weekly-review`** (ADMIN) — synthesizes the last 7 days of focus + attendance into
+  wins / risks / next focus. "Generate" button in the Focus Log tab. Fallback: deterministic
+  hit-rate.
 
-Planned (specced separately): `office-hours`, `ceo-review-the-3`, `weekly-review`.
+These advisors are **one-shot and context-fed**, distinct from the interactive gstack CLI
+skills (`/office-hours`, `/plan-ceo-review`).
 
 ## Config
 Reuses `DEEPSEEK_API_KEY` (see `.env.example`). No new env.

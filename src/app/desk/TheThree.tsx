@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
+import { runSkillClient } from "@/lib/ai/client";
 
 type Status = "NOT_STARTED" | "IN_PROGRESS" | "DONE_PERFECT";
 type Item = {
@@ -64,6 +65,7 @@ export function TheThree({
           )}
 
           {isAdmin && items.length > 0 && items.length < 3 && <AddItem />}
+          {isAdmin && items.length > 0 && <CeoReview />}
           {isAdmin && <Recap recap={focus.recap} />}
         </div>
       </div>
@@ -361,6 +363,73 @@ function CarryOver() {
     <button className="btn-ghost" disabled={busy} onClick={carry}>
       {busy ? "Carrying…" : "Carry over unfinished from last time"}
     </button>
+  );
+}
+
+type CeoReviewData = {
+  verdict: string;
+  perItem: { rank: number; call: "keep" | "sharpen" | "cut"; why: string }[];
+  missing: string[];
+  recommendation: string;
+};
+
+const CALL_CLS: Record<string, string> = {
+  keep: "bg-moss/20 text-moss",
+  sharpen: "bg-mist/30 text-moss",
+  cut: "bg-accent/15 text-accent",
+};
+
+function CeoReview() {
+  const [busy, setBusy] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [data, setData] = useState<CeoReviewData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function review() {
+    setBusy(true);
+    setErr(null);
+    const res = await runSkillClient<CeoReviewData>("ceo-review-the-3", {});
+    setBusy(false);
+    if ("error" in res) return setErr(res.error);
+    setOffline(res.source === "fallback");
+    setData(res.data);
+  }
+
+  return (
+    <div className="border-t border-paper/10 pt-4">
+      <button className="btn-ghost" disabled={busy} onClick={review}>
+        {busy ? "Reviewing…" : "Review today's 3 (CEO)"}
+      </button>
+      {err && <p className="text-accent text-sm mt-2">{err}</p>}
+      {data && (
+        <div className="mt-3 rounded-xl border border-paper/15 bg-paper/5 p-3 text-sm space-y-3">
+          <div className="text-xs uppercase tracking-wider text-paper/50">
+            {offline ? "CEO review — AI offline (heuristic)" : "CEO review"}
+          </div>
+          <p className="text-paper/80">{data.verdict}</p>
+          <ul className="space-y-1">
+            {data.perItem.map((p) => (
+              <li key={p.rank} className="flex items-start gap-2">
+                <span className="text-accent font-semibold">{p.rank}</span>
+                <span className={clsx("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0", CALL_CLS[p.call])}>
+                  {p.call}
+                </span>
+                <span className="flex-1 text-paper/80">{p.why}</span>
+              </li>
+            ))}
+          </ul>
+          {data.missing.length > 0 && (
+            <div>
+              <div className="text-paper/50">Missing:</div>
+              <ul className="list-disc list-inside text-paper/80">
+                {data.missing.map((m, i) => <li key={i}>{m}</li>)}
+              </ul>
+            </div>
+          )}
+          <p className="text-paper/80"><span className="text-paper/50">Recommendation:</span> {data.recommendation}</p>
+        </div>
+      )}
+    </div>
   );
 }
 

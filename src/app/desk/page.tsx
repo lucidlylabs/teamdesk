@@ -77,6 +77,7 @@ export default async function DeskPage() {
             createdAt: r.createdAt.toISOString(),
           }))}
           focusLog={isTeam ? (focusLog as any[]).map((d) => serializeFocus(d.date, d)) : null}
+          isAdmin={role === "ADMIN"}
         />
       </main>
     </div>
