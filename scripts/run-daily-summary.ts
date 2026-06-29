@@ -8,7 +8,7 @@
  * Reuses the same logic as the API route — direct DB access, no HTTP hop.
  */
 import { PrismaClient, Whitelist, User, Attendance } from "@prisma/client";
-import { buildDailySummary } from "../src/lib/summarize";
+import { generateDailySummary } from "../src/lib/summarize";
 import { sendDailySummary } from "../src/lib/discord";
 import { todayUTC } from "../src/lib/dates";
 
@@ -34,7 +34,8 @@ async function main() {
     where: { date: today, userId: { in: teamUsers.map((t: { id: string }) => t.id) } },
     include: { user: { select: { name: true, email: true } } },
   });
-  const { summary, refs } = buildDailySummary(rows);
+  const { summary, refs, source } = await generateDailySummary(rows);
+  console.log(`source: ${source}`);
   await prisma.dailySummary.upsert({
     where: { date: today },
     update: { summary, refs: refs.join("\n") },

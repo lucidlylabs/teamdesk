@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayUTC } from "@/lib/dates";
-import { buildDailySummary } from "@/lib/summarize";
+import { generateDailySummary } from "@/lib/summarize";
 import { sendDailySummary } from "@/lib/discord";
 
 export const maxDuration = 60;
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     where: { date: today, userId: { in: teamUsers.map((t: { id: string }) => t.id) } },
     include: { user: { select: { name: true, email: true } } },
   });
-  const { summary, refs } = buildDailySummary(rows);
+  const { summary, refs, source } = await generateDailySummary(rows);
 
   // 3. Persist + push
   const saved = await prisma.dailySummary.upsert({
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     refs,
   }).catch((e) => ({ error: String(e) }));
 
-  return NextResponse.json({ ok: true, summary: saved, discord });
+  return NextResponse.json({ ok: true, source, summary: saved, discord });
 }
 
 export const GET = POST;
