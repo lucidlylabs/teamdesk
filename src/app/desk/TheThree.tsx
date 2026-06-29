@@ -245,6 +245,52 @@ function AddItem() {
   const [perfectWhen, setPerfectWhen] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // AI sharpen state
+  const [sharpBusy, setSharpBusy] = useState(false);
+  const [critique, setCritique] = useState<string | null>(null);
+  const [aiOffline, setAiOffline] = useState(false);
+  const [suggestion, setSuggestion] = useState<
+    { title: string; revenueWhy: string; perfectWhen: string } | null
+  >(null);
+
+  const canSharpen = title.trim() && revenueWhy.trim() && perfectWhen.trim() && !sharpBusy;
+
+  async function sharpen() {
+    setSharpBusy(true);
+    setErr(null);
+    setCritique(null);
+    setSuggestion(null);
+    try {
+      const res = await fetch("/api/ai/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skill: "sharpen-focus-item",
+          input: { title, revenueWhy, perfectWhen },
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setErr(j.error || "Sharpen failed");
+        return;
+      }
+      const { source, data } = await res.json();
+      setAiOffline(source === "fallback");
+      setCritique(data.critique ?? null);
+      setSuggestion(data.suggestion ?? null);
+    } finally {
+      setSharpBusy(false);
+    }
+  }
+
+  function applySuggestion() {
+    if (!suggestion) return;
+    setTitle(suggestion.title);
+    setRevenueWhy(suggestion.revenueWhy);
+    setPerfectWhen(suggestion.perfectWhen);
+    setSuggestion(null);
+    setCritique(null);
+  }
 
   async function add() {
     setBusy(true);
@@ -267,8 +313,34 @@ function AddItem() {
       <textarea className="input" value={revenueWhy} onChange={(e) => setRevenueWhy(e.target.value)} placeholder="How it moves revenue/sales (required)" rows={2} />
       <textarea className="input" value={perfectWhen} onChange={(e) => setPerfectWhen(e.target.value)} placeholder="Perfection = done when… (required)" rows={2} />
       {err && <p className="text-accent text-sm">{err}</p>}
-      <div className="flex gap-2">
+
+      {critique && (
+        <div className="rounded-xl border border-paper/15 bg-paper/5 p-3 text-sm space-y-2">
+          <div className="text-xs uppercase tracking-wider text-paper/50">
+            {aiOffline ? "AI offline — heuristic" : "Sharpen"}
+          </div>
+          <p className="whitespace-pre-wrap text-paper/80">{critique}</p>
+          {suggestion && (
+            <div className="space-y-1 border-t border-paper/10 pt-2">
+              <div><span className="text-paper/50">Title:</span> {suggestion.title}</div>
+              <div><span className="text-paper/50">Revenue:</span> {suggestion.revenueWhy}</div>
+              <div><span className="text-paper/50">Perfection:</span> {suggestion.perfectWhen}</div>
+              <button className="btn-ghost mt-1" onClick={applySuggestion}>Apply suggestion</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
         <button className="btn-primary" disabled={busy} onClick={add}>{busy ? "Adding…" : "Add"}</button>
+        <button
+          className="btn-ghost"
+          disabled={!canSharpen}
+          title={canSharpen ? "" : "Fill title, revenue, and perfection first"}
+          onClick={sharpen}
+        >
+          {sharpBusy ? "Sharpening…" : "Sharpen with AI"}
+        </button>
         <button className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
       </div>
     </div>
